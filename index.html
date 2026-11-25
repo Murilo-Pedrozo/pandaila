@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Precificação de Doces</title>
+
+  <!-- Fontes (se estiver sem internet, o sistema usa fontes do computador e funciona igual) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="style.css" />
+  <script src="script.js" defer></script>
+  <script src="vendas.js" defer></script>
+</head>
+<body>
+
+  <!-- ===================== CABEÇALHO ===================== -->
+  <header class="topbar no-print">
+    <div class="wrap topbar-inner">
+      <div class="brand">
+        <svg viewBox="0 0 100 100" class="logo" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Logo">
+          <defs>
+            <mask id="biteMask">
+              <rect width="100" height="100" fill="white" />
+              <circle cx="60" cy="27" r="7.2" fill="black" />
+              <circle cx="69" cy="34" r="6.8" fill="black" />
+              <circle cx="77" cy="42" r="7.2" fill="black" />
+            </mask>
+          </defs>
+          <rect width="100" height="100" rx="22" fill="#5C270A" />
+          <circle cx="50" cy="53" r="29" fill="#F3E6D0" mask="url(#biteMask)" />
+          <path d="M 18 64 Q 34 45 50 57 Q 66 45 82 64 L 82 70 Q 66 51 50 63 Q 34 51 18 70 Z" fill="#5C270A" />
+          <path d="M 19 65 Q 34 49 50 60 Q 66 49 81 65 L 61 82 L 39 82 Z" fill="#F3E6D0" />
+          <path class="logo-star" d="M 72 17 Q 72 26 81 26 Q 72 26 72 35 Q 72 26 63 26 Q 72 26 72 17 Z" fill="#F3E6D0" />
+        </svg>
+        <div>
+          <span class="eyebrow">Confeitaria &amp; Gelados</span>
+          <h1>Precificação de Doces</h1>
+        </div>
+      </div>
+
+      <nav class="tabs" aria-label="Telas do sistema">
+        <button type="button" class="tab active" data-view="pricing">Precificação</button>
+        <button type="button" class="tab" data-view="sales">Vendas e lucro</button>
+      </nav>
+
+      <div class="top-actions" id="pricingActions">
+        <button type="button" class="btn btn-light" id="btnNew">+ Nova receita</button>
+        <button type="button" class="btn btn-outline-light" data-example="geladinho">Ex.: Geladinho</button>
+        <button type="button" class="btn btn-outline-light" data-example="brigadeiro">Ex.: Brigadeiro</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Cabeçalho que só aparece na impressão -->
+  <div class="print-only print-head">
+    <h1>Ficha de Precificação</h1>
+    <p id="printDate"></p>
+  </div>
+
+  <!-- ===================== CONTEÚDO ===================== -->
+  <main class="wrap layout" id="viewPricing">
+
+    <div class="col-main">
+
+      <!-- 1. RECEITA -->
+      <section class="card">
+        <div class="card-head">
+          <span class="step">1</span>
+          <h2>Receita</h2>
+        </div>
+
+        <div class="grid-fields recipe-fields">
+          <div class="field f-name">
+            <label for="recipeName">Nome da receita</label>
+            <input id="recipeName" class="in" type="text" placeholder="Ex.: Brigadeiro de Ninho" autocomplete="off" />
+          </div>
+          <div class="field f-type">
+            <label for="productType">Tipo de doce</label>
+            <input id="productType" class="in" type="text" list="typeList" placeholder="Automático" autocomplete="off" />
+            <datalist id="typeList">
+              <option value="Geladinho"></option>
+              <option value="Brigadeiro"></option>
+              <option value="Beijinho"></option>
+              <option value="Trufa"></option>
+              <option value="Cone trufado"></option>
+              <option value="Bolo de pote"></option>
+              <option value="Pão de mel"></option>
+              <option value="Fatia de bolo"></option>
+              <option value="Copo da felicidade"></option>
+              <option value="Ovo de colher"></option>
+              <option value="Brownie"></option>
+            </datalist>
+          </div>
+          <div class="field">
+            <label for="recipeYield">Rendimento</label>
+            <div class="affix right">
+              <input id="recipeYield" class="in num" type="text" inputmode="numeric" placeholder="12" />
+              <span>un.</span>
+            </div>
+          </div>
+          <div class="field">
+            <label for="unitSize">Tamanho <small>(opcional)</small></label>
+            <div class="qty">
+              <input id="unitSize" class="in num" type="text" inputmode="decimal" placeholder="—" />
+              <select id="sizeUnit" class="in-select" aria-label="Unidade do tamanho">
+                <option value="g">g</option>
+                <option value="ml">ml</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <p class="note">O <b>tipo de doce</b> é usado nos resultados ("custo por brigadeiro", "custo por cone"). Se deixar em branco, ele é tirado do nome da receita.</p>
+      </section>
+
+      <!-- 2. INGREDIENTES -->
+      <section class="card">
+        <div class="card-head between">
+          <div class="card-head">
+            <span class="step">2</span>
+            <div>
+              <h2>Ingredientes e embalagens</h2>
+              <p class="sub">Use sempre o preço que você paga <b>sem promoção</b>.</p>
+            </div>
+          </div>
+          <button type="button" class="btn btn-dark no-print" id="btnAddIng">+ Adicionar item</button>
+        </div>
+
+        <div class="formula no-print">
+          <span><b>Preço por unidade</b> = Valor do produto ÷ Qtd. da embalagem</span>
+          <span><b>Custo na receita</b> = Preço por unidade × Qtd. usada</span>
+        </div>
+
+        <table class="ing-table">
+          <thead>
+            <tr>
+              <th class="c-name">Ingrediente</th>
+              <th class="c-price">Valor do produto</th>
+              <th class="c-pkg">Qtd. embalagem</th>
+              <th class="c-unit">Preço por unidade</th>
+              <th class="c-used">Qtd. usada</th>
+              <th class="c-cost">Custo na receita</th>
+              <th class="c-act no-print"></th>
+            </tr>
+          </thead>
+          <tbody id="ingBody"></tbody>
+          <tfoot>
+            <tr>
+              <td colspan="5" class="tf-label">Valor dos ingredientes (soma dos custos)</td>
+              <td class="tf-value" id="ingTotalFoot">R$ 0,00</td>
+              <td class="no-print"></td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <datalist id="ingLibrary"></datalist>
+        <p class="note no-print">Escolha <b>kg</b> ou <b>L</b> e o sistema converte sozinho (1 kg = 1000 g, 1 L = 1000 ml). Embalagens (saquinho, forminha, caixinha) vão em <b>un</b>.</p>
+      </section>
+
+      <!-- 3. CUSTOS ADICIONAIS -->
+      <section class="card">
+        <div class="card-head">
+          <span class="step">3</span>
+          <div>
+            <h2>Custos adicionais</h2>
+            <p class="sub">Água, luz, gás, seu tempo de trabalho e outros gastos.</p>
+          </div>
+        </div>
+
+        <label class="label-strong">Água, luz, gás e internet</label>
+        <div class="seg no-print" role="radiogroup" aria-label="Como calcular água, luz e gás">
+          <label><input type="radio" name="ohMode" value="monthly" /><span>Pelas contas do mês</span></label>
+          <label><input type="radio" name="ohMode" value="percent" /><span>Porcentagem fixa</span></label>
+          <label><input type="radio" name="ohMode" value="none" /><span>Não incluir</span></label>
+        </div>
+
+        <div id="ohMonthlyPanel" class="panel">
+          <p class="help top">Coloque quanto você gasta <b>por mês</b>, só a parte usada na produção. Esses valores valem para <b>todas as receitas</b>.</p>
+          <div class="grid-monthly">
+            <div class="field">
+              <label for="mLuz">Luz / energia</label>
+              <div class="affix"><span>R$</span><input id="mLuz" class="in num" type="text" inputmode="decimal" placeholder="0,00" /></div>
+            </div>
+            <div class="field">
+              <label for="mAgua">Água</label>
+              <div class="affix"><span>R$</span><input id="mAgua" class="in num" type="text" inputmode="decimal" placeholder="0,00" /></div>
+            </div>
+            <div class="field">
+              <label for="mGas">Gás</label>
+              <div class="affix"><span>R$</span><input id="mGas" class="in num" type="text" inputmode="decimal" placeholder="0,00" /></div>
+            </div>
+            <div class="field">
+              <label for="mInternet">Internet / celular</label>
+              <div class="affix"><span>R$</span><input id="mInternet" class="in num" type="text" inputmode="decimal" placeholder="0,00" /></div>
+            </div>
+            <div class="field">
+              <label for="mOutros">Outros do mês</label>
+              <div class="affix"><span>R$</span><input id="mOutros" class="in num" type="text" inputmode="decimal" placeholder="0,00" /></div>
+            </div>
+            <div class="field">
+              <label for="mUnits">Doces feitos por mês</label>
+              <div class="affix right"><input id="mUnits" class="in num" type="text" inputmode="numeric" placeholder="500" /><span>un.</span></div>
+            </div>
+          </div>
+          <p class="calc-line" id="monthlyLine"></p>
+        </div>
+
+        <div id="ohPercentPanel" class="panel" hidden>
+          <div class="field narrow">
+            <label for="overheadPercent">Porcentagem sobre os ingredientes</label>
+            <div class="affix right">
+              <input id="overheadPercent" class="in num" type="text" inputmode="decimal" placeholder="10" />
+              <span>%</span>
+            </div>
+          </div>
+          <p class="help">Jeito mais simples: muita gente usa de 10% a 15% do valor dos ingredientes.</p>
+          <p class="calc-line" id="percentLine"></p>
+        </div>
+
+        <div class="grid-fields three">
+          <div class="field">
+            <label for="laborMinutes">Seu tempo nesta receita</label>
+            <div class="affix right">
+              <input id="laborMinutes" class="in num" type="text" inputmode="numeric" placeholder="0" />
+              <span>min</span>
+            </div>
+          </div>
+          <div class="field">
+            <label for="hourRate">Valor da sua hora</label>
+            <div class="affix">
+              <span>R$</span>
+              <input id="hourRate" class="in num" type="text" inputmode="decimal" placeholder="0,00" />
+            </div>
+          </div>
+          <div class="field">
+            <label for="extraCost">Outro gasto da receita</label>
+            <div class="affix">
+              <span>R$</span>
+              <input id="extraCost" class="in num" type="text" inputmode="decimal" placeholder="0,00" />
+            </div>
+          </div>
+        </div>
+        <p class="help">O valor da hora vale para todas as receitas. Ex.: querer ganhar R$ 1.600 trabalhando 160 h no mês dá R$ 10,00/h.</p>
+      </section>
+
+      <!-- 4. RESULTADO DA RECEITA -->
+      <section class="card">
+        <div class="card-head">
+          <span class="step">4</span>
+          <h2>Resultado da receita</h2>
+        </div>
+
+        <div class="stats">
+          <div class="stat">
+            <span>Custo total da receita</span>
+            <strong id="resTotalCost">R$ 0,00</strong>
+            <small>ingredientes + adicionais</small>
+          </div>
+          <div class="stat">
+            <span>Massa total</span>
+            <strong id="resMass">0 g/ml</strong>
+            <small>soma das quantidades usadas</small>
+          </div>
+          <div class="stat">
+            <span id="lblMassPer">Massa por unidade</span>
+            <strong id="resMassPer">0 g/ml</strong>
+            <small id="resMassPerHint">massa ÷ rendimento</small>
+          </div>
+          <div class="stat highlight">
+            <span id="lblUnitCost">Custo por unidade</span>
+            <strong id="resUnitCost">R$ 0,00</strong>
+            <small id="resUnitCostHint">custo total ÷ rendimento</small>
+          </div>
+        </div>
+
+        <dl class="breakdown">
+          <div><dt>Ingredientes e embalagens</dt><dd id="bkIng">R$ 0,00</dd></div>
+          <div><dt>Água, luz e gás</dt><dd id="bkOh">R$ 0,00</dd></div>
+          <div><dt>Mão de obra</dt><dd id="bkLabor">R$ 0,00</dd></div>
+          <div><dt>Outro gasto</dt><dd id="bkExtra">R$ 0,00</dd></div>
+          <div class="total"><dt>Custo total</dt><dd id="bkTotal">R$ 0,00</dd></div>
+        </dl>
+
+        <p class="note">Itens em <b>un</b> (saquinho, forminha, ovos) entram no custo, mas não no peso da massa.</p>
+      </section>
+
+      <!-- 5. PRECIFICAÇÃO -->
+      <section class="card">
+        <div class="card-head">
+          <span class="step">5</span>
+          <h2>Precificação</h2>
+        </div>
+
+        <label class="label-strong" for="markupInput" id="lblMarkup">Quanto você quer ganhar em cima do custo?</label>
+
+        <div class="chips no-print" id="chips">
+          <button type="button" class="chip" data-m="50">50%</button>
+          <button type="button" class="chip" data-m="100">100%</button>
+          <button type="button" class="chip" data-m="150">150%</button>
+          <button type="button" class="chip" data-m="200">200%</button>
+          <button type="button" class="chip" data-m="300">300%</button>
+        </div>
+
+        <div class="markup-row">
+          <input id="markupSlider" type="range" min="0" max="400" step="5" class="no-print" aria-label="Porcentagem sobre o custo" />
+          <div class="affix right markup-box">
+            <input id="markupInput" class="in num" type="text" inputmode="decimal" />
+            <span>%</span>
+          </div>
+        </div>
+
+        <p class="formula-line" id="formulaLine"></p>
+
+        <label class="check no-print">
+          <input type="checkbox" id="roundUp" />
+          Arredondar o preço para cima (de R$ 0,50 em R$ 0,50)
+        </label>
+
+        <div class="price-box">
+          <div>
+            <label for="priceInput" class="label-strong">Ou digite o preço de venda</label>
+            <small class="help">A porcentagem é recalculada sozinha.</small>
+          </div>
+          <div class="affix price-affix">
+            <span>R$</span>
+            <input id="priceInput" class="in num" type="text" inputmode="decimal" />
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- ===================== LATERAL ===================== -->
+    <aside class="col-side">
+
+      <section class="summary">
+        <span class="pill">Resumo</span>
+        <h2 id="sumName">Receita</h2>
+        <p id="sumSub" class="sum-sub"></p>
+
+        <div class="sum-price">
+          <div class="sum-price-top">
+            <span id="sumPriceLabel">Preço de venda (unidade)</span>
+            <span id="sumBadge" class="badge">—</span>
+          </div>
+          <strong id="sumPrice">R$ 0,00</strong>
+        </div>
+
+        <dl class="sum-list">
+          <div><dt id="sumUnitCostLabel">Custo por unidade</dt><dd id="sumUnitCost">R$ 0,00</dd></div>
+          <div><dt id="sumUnitProfitLabel">Lucro por unidade</dt><dd id="sumUnitProfit" class="good">R$ 0,00</dd></div>
+          <div><dt id="sumRevenueLabel">Faturamento da receita</dt><dd id="sumRevenue">R$ 0,00</dd></div>
+          <div><dt>Custo da receita</dt><dd id="sumTotalCost">R$ 0,00</dd></div>
+          <div class="total"><dt>Lucro da receita</dt><dd id="sumTotalProfit" class="good">R$ 0,00</dd></div>
+        </dl>
+
+        <div class="sum-actions no-print">
+          <button type="button" class="btn btn-light wide" id="btnSave">Salvar receita</button>
+          <button type="button" class="btn btn-outline-light" id="btnSaveAs">Salvar como nova</button>
+          <button type="button" class="btn btn-outline-light" id="btnCopy">Copiar p/ WhatsApp</button>
+          <button type="button" class="btn btn-outline-light wide" id="btnPrint">Imprimir / PDF</button>
+        </div>
+        <p id="saveStatus" class="save-status no-print"></p>
+      </section>
+
+      <section class="card no-print">
+        <div class="card-head between">
+          <h3>Receitas salvas</h3>
+          <span id="savedCount" class="count">0</span>
+        </div>
+
+        <input id="searchSaved" class="in search" type="search" placeholder="Buscar por nome ou tipo..." />
+        <div id="savedList" class="saved-list"></div>
+
+        <div class="backup">
+          <p>Receitas, contas do mês e vendas ficam guardadas neste navegador. Faça um backup de vez em quando.</p>
+          <div class="backup-actions">
+            <button type="button" class="btn btn-soft" id="btnExport">Baixar backup</button>
+            <button type="button" class="btn btn-soft" id="btnImport">Restaurar backup</button>
+          </div>
+          <input type="file" id="importFile" accept=".json,application/json" hidden />
+        </div>
+      </section>
+
+    </aside>
+  </main>
+
+  <!-- ===================== VENDAS E LUCRO ===================== -->
+  <section class="wrap sales" id="viewSales" hidden>
+
+    <div class="sales-top">
+      <div>
+        <h2 class="page-title">Vendas e lucro</h2>
+        <p class="sub">Lance o que você produziu, vendeu e perdeu para saber se está no lucro.</p>
+      </div>
+      <div class="period">
+        <label for="salesPeriod" class="label-strong">Período</label>
+        <select id="salesPeriod" class="in"></select>
+      </div>
+    </div>
+
+    <div id="salesStatus" class="status-banner"></div>
+
+    <div class="kpis">
+      <div class="kpi">
+        <span>Faturamento</span>
+        <strong id="kNet">R$ 0,00</strong>
+        <small id="kNetSub"></small>
+      </div>
+      <div class="kpi" id="kProfitCard">
+        <span id="kProfitLabel">Lucro</span>
+        <strong id="kProfit">R$ 0,00</strong>
+        <small id="kProfitSub"></small>
+      </div>
+      <div class="kpi">
+        <span>Vendidos</span>
+        <strong id="kSold">0 un.</strong>
+        <small id="kSoldSub"></small>
+      </div>
+      <div class="kpi">
+        <span>Perdas</span>
+        <strong id="kLost">0 un.</strong>
+        <small id="kLostSub"></small>
+      </div>
+      <div class="kpi">
+        <span>Despesas extras</span>
+        <strong id="kExp">R$ 0,00</strong>
+        <small id="kExpSub">entrega, taxas, anúncios</small>
+      </div>
+    </div>
+
+    <div class="sales-grid">
+
+      <!-- Formulário de lançamento -->
+      <section class="card">
+        <div class="card-head"><h3>Novo lançamento</h3></div>
+
+        <div class="seg" role="radiogroup" aria-label="Tipo de lançamento">
+          <label><input type="radio" name="movKind" value="venda" checked /><span>Venda</span></label>
+          <label><input type="radio" name="movKind" value="perda" /><span>Perda</span></label>
+          <label><input type="radio" name="movKind" value="producao" /><span>Produção</span></label>
+          <label><input type="radio" name="movKind" value="despesa" /><span>Despesa</span></label>
+        </div>
+
+        <div class="mov-form">
+          <div class="field">
+            <label for="movDate">Data</label>
+            <input id="movDate" class="in" type="date" />
+          </div>
+          <div class="field" data-kinds="venda perda producao">
+            <label for="movRecipe">Receita</label>
+            <select id="movRecipe" class="in"></select>
+          </div>
+          <div class="field" data-kinds="venda perda producao">
+            <label for="movQty">Quantidade</label>
+            <div class="affix right">
+              <input id="movQty" class="in num" type="text" inputmode="numeric" placeholder="0" />
+              <span>un.</span>
+            </div>
+          </div>
+          <div class="field" data-kinds="venda">
+            <label for="movPrice">Preço de cada</label>
+            <div class="affix">
+              <span>R$</span>
+              <input id="movPrice" class="in num" type="text" inputmode="decimal" placeholder="0,00" />
+            </div>
+          </div>
+          <div class="field" data-kinds="venda">
+            <label for="movDiscount">Desconto <small>(no total)</small></label>
+            <div class="qty">
+              <input id="movDiscount" class="in num" type="text" inputmode="decimal" placeholder="0" />
+              <select id="movDiscountMode" class="in-select" aria-label="Tipo de desconto">
+                <option value="brl">R$</option>
+                <option value="pct">%</option>
+              </select>
+            </div>
+          </div>
+          <div class="field" data-kinds="venda">
+            <label for="movPayment">Pagamento</label>
+            <select id="movPayment" class="in"></select>
+          </div>
+          <div class="field" data-kinds="perda">
+            <label for="movReason">Motivo</label>
+            <select id="movReason" class="in"></select>
+          </div>
+          <div class="field" data-kinds="despesa">
+            <label for="movDesc">Descrição</label>
+            <input id="movDesc" class="in" type="text" placeholder="Ex.: Taxa do iFood" />
+          </div>
+          <div class="field" data-kinds="despesa">
+            <label for="movAmount">Valor</label>
+            <div class="affix">
+              <span>R$</span>
+              <input id="movAmount" class="in num" type="text" inputmode="decimal" placeholder="0,00" />
+            </div>
+          </div>
+          <div class="field full">
+            <label for="movNote">Observação <small>(opcional)</small></label>
+            <input id="movNote" class="in" type="text" placeholder="Ex.: Encomenda da Maria" />
+          </div>
+        </div>
+
+        <p id="movPreview" class="calc-line"></p>
+        <button type="button" class="btn btn-dark btn-block" id="btnAddMov">Lançar</button>
+        <p class="help" id="movHelp"></p>
+      </section>
+
+      <!-- Resumo por receita -->
+      <section class="card">
+        <div class="card-head"><h3>Por receita</h3></div>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th class="l">Receita</th>
+                <th>Feitos</th>
+                <th>Vendidos</th>
+                <th>Perdidos</th>
+                <th title="Feitos − vendidos − perdidos (desde o início)">Estoque</th>
+                <th>Faturamento</th>
+                <th>Lucro</th>
+                <th>Margem</th>
+              </tr>
+            </thead>
+            <tbody id="byRecipeBody"></tbody>
+          </table>
+        </div>
+        <p class="help">Estoque = feitos − vendidos − perdidos, contando desde o primeiro lançamento. Só aparece se você lançar a produção.</p>
+      </section>
+    </div>
+
+    <!-- Lista de lançamentos -->
+    <section class="card">
+      <div class="card-head between">
+        <h3>Lançamentos do período</h3>
+        <button type="button" class="btn btn-soft" id="btnCsv">Baixar planilha (Excel)</button>
+      </div>
+      <div class="table-scroll">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th class="l">Data</th>
+              <th class="l">Tipo</th>
+              <th class="l">Item</th>
+              <th>Qtd.</th>
+              <th>Valor</th>
+              <th>Lucro</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="movBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+  </section>
+
+  <footer class="foot no-print">Precificação de Doces · funciona offline, direto no seu computador</footer>
+
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+</body>
+</html>
