@@ -207,7 +207,17 @@ function updatePreview() {
     return;
   }
   if (movKind === 'producao') {
-    el.textContent = m.qty > 0 ? `+${qty(m.qty)} ${m.label} no estoque` : `Custo atual: ${brl(selectedRecipe().unitCost)} por ${m.label}`;
+    let txt = m.qty > 0 ? `+${qty(m.qty)} ${m.label} feitos` : `Custo atual: ${brl(selectedRecipe().unitCost)} por ${m.label}`;
+    if (m.qty > 0 && $('movStockOut') && $('movStockOut').checked && typeof recipeStockNeeds === 'function') {
+      const needs = recipeStockNeeds(m.recipeId, m.qty);
+      if (needs.length) {
+        txt += ` · sai do estoque: ${needs.map((n) => `${n.name} ${fmtStockQty(n.amount, n.unit)}${n.amount > n.have + 0.0005 ? ' (falta no estoque)' : ''}`).join(', ')}`;
+        if (needs.some((n) => n.amount > n.have + 0.0005)) el.classList.add('warn');
+      } else {
+        txt += ' · nenhum ingrediente desta receita está no estoque';
+      }
+    }
+    el.textContent = txt;
     return;
   }
   if (movKind === 'perda') {
@@ -246,6 +256,14 @@ function addMovement() {
   }
 
   const entry = { id: newId(), createdAt: new Date().toISOString(), ...m };
+  let stockMsg = '';
+  let stockShort = [];
+  if (movKind === 'producao' && $('movStockOut') && $('movStockOut').checked && typeof stockOutForProduction === 'function') {
+    const out = stockOutForProduction(m.recipeId, m.qty);
+    entry.stockOut = out.items;               // guardado para devolver ao estoque se a produção for excluída
+    stockShort = out.short;
+    if (out.items.length) stockMsg = ` Baixa de ${out.items.length} ${out.items.length === 1 ? 'ingrediente' : 'ingredientes'} no estoque.`;
+  }
   const list = getMovements();
   list.push(entry);
   if (!setMovements(list)) return;
@@ -261,7 +279,9 @@ function addMovement() {
     producao: `Produção lançada: ${qty(entry.qty)} un.`,
     despesa: `Despesa lançada: ${brl(entry.amount)}`
   };
-  toast(msg[movKind]);
+  toast(msg[movKind] + stockMsg);
+  if (stockShort.length) setTimeout(() => toast(`Estoque insuficiente: ${stockShort.join(', ')}.`, 'error'), 400);
+  if (typeof renderStockBadge === 'function') renderStockBadge();
   (movKind === 'despesa' ? $('movDesc') : $('movQty')).focus();
 }
 
@@ -272,8 +292,14 @@ function deleteMovement(id) {
   const what = m.kind === 'despesa' ? m.desc : `${qty(m.qty)} × ${m.recipeName}`;
   if (!confirm(`Excluir este lançamento (${MOV_KINDS[m.kind].label}: ${what})?`)) return;
   setMovements(list.filter((x) => x.id !== id));
+  let back = '';
+  if (Array.isArray(m.stockOut) && m.stockOut.length && typeof restoreStock === 'function') {
+    restoreStock(m.stockOut);
+    back = ' Os ingredientes voltaram para o estoque.';
+    renderStockBadge();
+  }
   renderSales();
-  toast('Lançamento excluído.');
+  toast('Lançamento excluído.' + back);
 }
 
 // ---------------------------------------------------------------- telas
@@ -457,13 +483,15 @@ function downloadCsv() {
 
 // ---------------------------------------------------------------- abas
 function showView(view) {
-  const sales = view === 'sales';
-  $('viewPricing').hidden = sales;
-  $('viewSales').hidden = !sales;
-  $('pricingActions').hidden = sales;
-  document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', t.dataset.view === view));
-  try { localStorage.setItem('doces_aba', view); } catch (e) { /* ignora */ }
-  if (sales) renderSales();
+  const v = ['pricing', 'sales', 'stock'].includes(view) ? view : 'pricing';
+  $('viewPricing').hidden = v !== 'pricing';
+  $('viewSales').hidden = v !== 'sales';
+  if ($('viewStock')) $('viewStock').hidden = v !== 'stock';
+  $('pricingActions').hidden = v !== 'pricing';
+  document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', t.dataset.view === v));
+  try { localStorage.setItem('doces_aba', v); } catch (e) { /* ignora */ }
+  if (v === 'sales') renderSales();
+  if (v === 'stock' && typeof renderStock === 'function') renderStock();
   window.scrollTo({ top: 0 });
 }
 
@@ -487,6 +515,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updatePreview();
   });
 
+  if ($('movStockOut')) $('movStockOut').addEventListener('change', updatePreview);
   ['movQty', 'movPrice', 'movDiscount', 'movDiscountMode', 'movAmount', 'movDate'].forEach((id) => {
     $(id).addEventListener('input', updatePreview);
   });
@@ -504,6 +533,10 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   $('btnCsv').addEventListener('click', downloadCsv);
 
+  // Backup também nesta aba (usa o mesmo arquivo da aba Precificação)
+  $('btnExportSales').addEventListener('click', exportBackup);
+  $('btnImportSales').addEventListener('click', () => $('importFile').click());
+
   renderRecipeSelect();
   const r = selectedRecipe();
   if (r) $('movPrice').value = moneyToInput(r.price);
@@ -511,5 +544,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let lastView = 'pricing';
   try { lastView = localStorage.getItem('doces_aba') || 'pricing'; } catch (e) { /* ignora */ }
-  showView(lastView === 'sales' ? 'sales' : 'pricing');
+  showView(lastView);
 });

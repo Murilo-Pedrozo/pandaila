@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="style.css" />
   <script src="script.js" defer></script>
   <script src="vendas.js" defer></script>
+  <script src="estoque.js" defer></script>
 </head>
 <body>
 
@@ -44,6 +45,7 @@
       <nav class="tabs" aria-label="Telas do sistema">
         <button type="button" class="tab active" data-view="pricing">Precificação</button>
         <button type="button" class="tab" data-view="sales">Vendas e lucro</button>
+        <button type="button" class="tab" data-view="stock">Estoque <span class="tab-badge" id="stockBadge" hidden></span></button>
       </nav>
 
       <div class="top-actions" id="pricingActions">
@@ -395,9 +397,13 @@
         <h2 class="page-title">Vendas e lucro</h2>
         <p class="sub">Lance o que você produziu, vendeu e perdeu para saber se está no lucro.</p>
       </div>
-      <div class="period">
-        <label for="salesPeriod" class="label-strong">Período</label>
-        <select id="salesPeriod" class="in"></select>
+      <div class="sales-tools">
+        <div class="period">
+          <label for="salesPeriod" class="label-strong">Período</label>
+          <select id="salesPeriod" class="in"></select>
+        </div>
+        <button type="button" class="btn btn-soft" id="btnExportSales" title="Salva receitas, preços, contas e vendas num arquivo">Baixar backup</button>
+        <button type="button" class="btn btn-soft" id="btnImportSales" title="Recupera tudo a partir de um arquivo de backup">Restaurar backup</button>
       </div>
     </div>
 
@@ -481,6 +487,9 @@
             <label for="movPayment">Pagamento</label>
             <select id="movPayment" class="in"></select>
           </div>
+          <div class="field full" data-kinds="producao">
+            <label class="check stock-check"><input type="checkbox" id="movStockOut" checked /> Dar baixa dos ingredientes no estoque</label>
+          </div>
           <div class="field" data-kinds="perda">
             <label for="movReason">Motivo</label>
             <select id="movReason" class="in"></select>
@@ -557,7 +566,115 @@
 
   </section>
 
-  <footer class="foot no-print">Precificação de Doces · funciona offline, direto no seu computador</footer>
+  <!-- ===================== ESTOQUE ===================== -->
+  <section class="wrap sales" id="viewStock" hidden>
+
+    <div class="sales-top">
+      <div>
+        <h2 class="page-title">Estoque de ingredientes</h2>
+        <p class="sub">Registre cada compra com a data e a validade. O sistema mostra o que você tem e avisa o que está vencendo.</p>
+      </div>
+    </div>
+
+    <div id="stockStatus" class="status-banner"></div>
+
+    <div class="kpis four">
+      <div class="kpi">
+        <span>Produtos no estoque</span>
+        <strong id="stProducts">0</strong>
+        <small id="stProductsSub">—</small>
+      </div>
+      <div class="kpi">
+        <span>Valor em estoque</span>
+        <strong id="stValue">R$ 0,00</strong>
+        <small>pelo preço que você pagou</small>
+      </div>
+      <div class="kpi" id="stSoonCard">
+        <span>Vencendo em 7 dias</span>
+        <strong id="stSoon">0</strong>
+        <small id="stSoonSub">—</small>
+      </div>
+      <div class="kpi" id="stExpiredCard">
+        <span>Vencidos</span>
+        <strong id="stExpired">0</strong>
+        <small id="stExpiredSub">—</small>
+      </div>
+    </div>
+
+    <div class="sales-grid">
+
+      <!-- Registrar compra -->
+      <section class="card">
+        <div class="card-head"><h3 id="stFormTitle">Registrar compra</h3></div>
+        <div class="mov-form">
+          <div class="field full">
+            <label for="stName">Produto</label>
+            <input id="stName" class="in" type="text" list="ingLibrary" placeholder="Ex.: Leite condensado" autocomplete="off" />
+          </div>
+          <div class="field">
+            <label for="stBuyDate">Data da compra</label>
+            <input id="stBuyDate" class="in" type="date" />
+          </div>
+          <div class="field">
+            <label for="stExpiry">Validade <small>(opcional)</small></label>
+            <input id="stExpiry" class="in" type="date" />
+          </div>
+          <div class="field">
+            <label for="stPacks">Quantas embalagens</label>
+            <div class="affix right">
+              <input id="stPacks" class="in num" type="text" inputmode="numeric" placeholder="1" />
+              <span>un.</span>
+            </div>
+          </div>
+          <div class="field">
+            <label for="stPackQty">Tamanho de cada</label>
+            <div class="qty">
+              <input id="stPackQty" class="in num" type="text" inputmode="decimal" placeholder="395" />
+              <select id="stUnit" class="in-select" aria-label="Unidade da embalagem">
+                <option value="g">g</option>
+                <option value="kg">kg</option>
+                <option value="ml">ml</option>
+                <option value="L">L</option>
+                <option value="un">un</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label for="stPackPrice">Preço de cada embalagem</label>
+            <div class="affix">
+              <span>R$</span>
+              <input id="stPackPrice" class="in num" type="text" inputmode="decimal" placeholder="0,00" />
+            </div>
+          </div>
+          <div class="field">
+            <label for="stNote">Onde comprou <small>(opcional)</small></label>
+            <input id="stNote" class="in" type="text" placeholder="Ex.: Atacadão" />
+          </div>
+        </div>
+        <p id="stPreview" class="calc-line"></p>
+        <button type="button" class="btn btn-dark btn-block" id="stAdd">Registrar compra</button>
+        <p class="help">O preço também atualiza o cadastro de ingredientes, então as receitas novas já usam o preço da última compra.</p>
+      </section>
+
+      <!-- O que tem no estoque -->
+      <section class="card">
+        <div class="card-head between">
+          <h3>O que tem no estoque</h3>
+          <input id="stSearch" class="in st-search" type="search" placeholder="Buscar produto…" aria-label="Buscar produto" />
+        </div>
+        <div class="chips" id="stFilter">
+          <button type="button" class="chip active" data-f="all">Todos</button>
+          <button type="button" class="chip" data-f="soon">Vencendo</button>
+          <button type="button" class="chip" data-f="expired">Vencidos</button>
+          <button type="button" class="chip" data-f="empty">Acabaram</button>
+        </div>
+        <div id="stockList" class="stock-list"></div>
+      </section>
+    </div>
+
+  </section>
+
+  <footer class="foot no-print">Precificação de Doces · receitas, vendas e estoque · seus dados ficam neste aparelho</footer>
 
   <div id="toasts" class="toasts" aria-live="polite"></div>
 </body>

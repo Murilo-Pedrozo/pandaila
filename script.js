@@ -714,7 +714,8 @@ function exportBackup() {
     recipes: getRecipes(),
     library: getLibrary(),
     settings,
-    movements: typeof getMovements === 'function' ? getMovements() : []
+    movements: typeof getMovements === 'function' ? getMovements() : [],
+    stock: typeof getStock === 'function' ? getStock() : []
   };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -725,7 +726,7 @@ function exportBackup() {
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
-  toast(`Backup baixado (${data.recipes.length} receitas).`);
+  toast(`Backup baixado (${data.recipes.length} receitas, ${data.stock.length} compras no estoque).`);
 }
 
 function importBackup(file) {
@@ -769,9 +770,21 @@ function importBackup(file) {
         setMovements(movs);
         movMsg = ` e ${movAdded} lançamento(s) de vendas`;
       }
+      if (Array.isArray(data.stock) && typeof getStock === 'function') {
+        const st = getStock();
+        let stAdded = 0;
+        data.stock.forEach((l) => {
+          if (!l || !l.id) return;
+          const idx = st.findIndex((x) => x.id === l.id);
+          if (idx >= 0) st[idx] = l; else { st.push(l); stAdded++; }
+        });
+        setStock(st);
+        movMsg += ` e ${stAdded} compra(s) do estoque`;
+      }
       renderSaved();
       update(false);
       if (typeof renderSales === 'function') renderSales();
+      if (typeof renderStock === 'function') renderStock();
       toast(`Backup restaurado: ${added} receita(s) nova(s), ${updated} atualizada(s)${movMsg}.`);
     } catch (e) {
       toast('Arquivo inválido. Use um backup gerado por esta calculadora.', 'error');
